@@ -13,10 +13,6 @@ const CONFIG = {
 
 async function testClientConfig() {
     console.log("\n🧪 TestClientConfig");
-    // In Node.js binding, validation happens at runtime or TS compile time.
-    // We test if connect throws on invalid args (mocking behavior since we can't easily mock the C++ side without crashing)
-    // Actually, connect() performs real connection in Rust. 
-    // We can test valid config here.
     try {
         const client = await SglangClient.connect(CONFIG.endpoint, CONFIG.tokenizerPath);
         assert(client instanceof SglangClient, "Should return SglangClient instance");
@@ -29,8 +25,6 @@ async function testClientConfig() {
 
 function testChatCompletionRequestValidation() {
     console.log("\n🧪 TestChatCompletionRequestValidation");
-    // TypeScript handles static validation. 
-    // Runtime validation depends on JSON parsing in Rust.
     const req: ChatCompletionRequest = {
         model: "default",
         messages: [{ role: "user", content: "test" }],
@@ -45,7 +39,6 @@ function testChatCompletionRequestValidation() {
 
 function testChatCompletionResponseTypes() {
     console.log("\n🧪 TestChatCompletionResponseTypes");
-    // Simulate a response object to verify our expectations of the shape match
     const resp = {
         id: "test-id",
         model: "default",
