@@ -232,6 +232,14 @@ impl ResponseConverter {
                 }
                 self.decode_streams.remove(&index);
 
+                // If final_text is empty, it might be a non-streaming request where we need to decode output_ids
+                if final_text.is_empty() && !complete.output_ids.is_empty() {
+                     match self.tokenizer.decode(&complete.output_ids, self.skip_special_tokens) {
+                        Ok(text) => final_text = text,
+                        Err(_) => {} // Ignore decoding error
+                    }
+                }
+
                 // Determine finish reason
                 let finish_reason = if complete.finish_reason.is_empty() {
                     "stop".to_string()
@@ -270,7 +278,7 @@ impl ResponseConverter {
                         index,
                         delta: ChatMessageDelta {
                             role: None,
-                            content: None, // Content was already sent in chunks
+                            content: if final_text.is_empty() { None } else { Some(final_text) },
                             tool_calls: None,
                             reasoning_content: None,
                         },

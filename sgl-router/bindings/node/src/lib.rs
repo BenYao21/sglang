@@ -10,6 +10,7 @@ use sglang_router_rs::tokenizer::traits::Tokenizer;
 use sglang_router_rs::grpc_client::sglang_scheduler::SglangSchedulerClient;
 use sglang_router_rs::protocols::chat::ChatCompletionRequest;
 use sglang_router_rs::routers::grpc::utils::{process_chat_messages, generate_tool_constraints};
+use sglang_router_rs::protocols::validated::Normalizable;
 use uuid::Uuid;
 
 mod converter;
@@ -129,6 +130,8 @@ impl SglangClient {
                  Err(e) => return Err(Error::new(Status::GenericFailure, format!("Stream error: {}", e))),
              }
         }
+        
+        stream.mark_completed();
 
         let response = serde_json::json!({
             "id": converter.request_id,
@@ -153,8 +156,10 @@ impl SglangClient {
     /// Accepts a callback function that receives JSON chunks
     #[napi(ts_args_type = "requestJson: string, callback: (err: null | Error, chunk: string) => void")]
     pub fn chat_completion_stream(&self, request_json: String, callback: ThreadsafeFunction<String, ErrorStrategy::CalleeHandled>) -> Result<()> {
-         let chat_request: ChatCompletionRequest = serde_json::from_str(&request_json)
+         let mut chat_request: ChatCompletionRequest = serde_json::from_str(&request_json)
             .map_err(|e| Error::new(Status::InvalidArg, format!("Failed to parse request JSON: {}", e)))?;
+        
+        chat_request.normalize();
         
         let client = self.client.clone();
         let tokenizer = self.tokenizer.clone();
@@ -221,6 +226,9 @@ impl SglangClient {
                         Err(e) => return Err(anyhow::anyhow!("Stream error: {}", e)),
                     }
                 }
+
+                stream.mark_completed();
+                callback.call(Ok("null".to_string()), ThreadsafeFunctionCallMode::Blocking);
                 Ok(())
             }.await;
 

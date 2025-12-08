@@ -1,42 +1,42 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
 /// <reference types="node" />
-import { SglangClient, ChatCompletionRequest } from './client';
-import assert from 'assert';
-
+const client_1 = require("./client");
+const assert_1 = __importDefault(require("assert"));
 // Configuration
 const CONFIG = {
     endpoint: process.env.SGLANG_ROUTER_ENDPOINT || "grpc://localhost:30000",
     tokenizerPath: process.env.TOKENIZER_PATH || "/root/.cache/huggingface/hub/models--Qwen--Qwen2.5-1.5B/snapshots/8faed761d45a263340a0528343f099c05c9a4323",
     model: "Qwen/Qwen2.5-1.5B",
 };
-
 // --- Unit Tests (Mimicking Go's client_test.go) ---
-
 async function testClientConfig() {
     console.log("\n🧪 TestClientConfig");
     try {
-        const client = await SglangClient.connect(CONFIG.endpoint, CONFIG.tokenizerPath);
-        assert(client instanceof SglangClient, "Should return SglangClient instance");
+        const client = await client_1.SglangClient.connect(CONFIG.endpoint, CONFIG.tokenizerPath);
+        (0, assert_1.default)(client instanceof client_1.SglangClient, "Should return SglangClient instance");
         console.log("  ✅ Valid config passed");
-    } catch (e) {
+    }
+    catch (e) {
         console.error("  ❌ Valid config failed", e);
         throw e;
     }
 }
-
 function testChatCompletionRequestValidation() {
     console.log("\n🧪 TestChatCompletionRequestValidation");
-    const req: ChatCompletionRequest = {
+    const req = {
         model: "default",
         messages: [{ role: "user", content: "test" }],
         stream: false
     };
-    
-    assert.strictEqual(req.model, "default");
-    assert.strictEqual(req.messages.length, 1);
-    assert.strictEqual(req.messages[0].role, "user");
+    assert_1.default.strictEqual(req.model, "default");
+    assert_1.default.strictEqual(req.messages.length, 1);
+    assert_1.default.strictEqual(req.messages[0].role, "user");
     console.log("  ✅ Request structure valid");
 }
-
 function testChatCompletionResponseTypes() {
     console.log("\n🧪 TestChatCompletionResponseTypes");
     const resp = {
@@ -44,59 +44,52 @@ function testChatCompletionResponseTypes() {
         model: "default",
         created: 1234567890,
         choices: [{
-            index: 0,
-            message: { role: "assistant", content: "Hello" },
-            finish_reason: "stop"
-        }],
+                index: 0,
+                message: { role: "assistant", content: "Hello" },
+                finish_reason: "stop"
+            }],
         usage: {
             prompt_tokens: 10,
             completion_tokens: 20,
             total_tokens: 30
         }
     };
-
-    assert.strictEqual(resp.id, "test-id");
-    assert.strictEqual(resp.choices.length, 1);
-    assert.strictEqual(resp.choices[0].message.content, "Hello");
-    assert.strictEqual(resp.usage.total_tokens, 30);
+    assert_1.default.strictEqual(resp.id, "test-id");
+    assert_1.default.strictEqual(resp.choices.length, 1);
+    assert_1.default.strictEqual(resp.choices[0].message.content, "Hello");
+    assert_1.default.strictEqual(resp.usage.total_tokens, 30);
     console.log("  ✅ Response structure valid");
 }
-
 function testStreamingResponseTypes() {
     console.log("\n🧪 TestStreamingResponseTypes");
     const chunk = {
         id: "stream-id",
         created: 1234567890,
         choices: [{
-            index: 0,
-            delta: { content: "Hello" },
-            finish_reason: null
-        }]
+                index: 0,
+                delta: { content: "Hello" },
+                finish_reason: null
+            }]
     };
-
-    assert.strictEqual(chunk.id, "stream-id");
-    assert(chunk.choices.length > 0);
-    assert.strictEqual(chunk.choices[0].delta.content, "Hello");
+    assert_1.default.strictEqual(chunk.id, "stream-id");
+    (0, assert_1.default)(chunk.choices.length > 0);
+    assert_1.default.strictEqual(chunk.choices[0].delta.content, "Hello");
     console.log("  ✅ Streaming chunk structure valid");
 }
-
 // --- Integration Tests (Real calls) ---
-
-async function testIntegration(client: SglangClient) {
+async function testIntegration(client) {
     console.log("\n--- Integration Tests ---");
-
     // Tokenizer
     console.log("\n🧪 TestTokenizer");
     const text = "Hello world";
     const tokens = client.encode(text);
     console.log(`  Encoded: [${tokens}]`);
-    assert(Array.isArray(tokens));
-    assert(tokens.length > 0);
+    (0, assert_1.default)(Array.isArray(tokens));
+    (0, assert_1.default)(tokens.length > 0);
     const decoded = client.decode(tokens);
     console.log(`  Decoded: ${decoded}`);
-    assert.strictEqual(decoded, text);
+    assert_1.default.strictEqual(decoded, text);
     console.log("  ✅ Tokenizer roundtrip passed");
-
     // Chat Completion
     console.log("\n🧪 TestChatCompletion (Real)");
     const req = {
@@ -107,10 +100,9 @@ async function testIntegration(client: SglangClient) {
     };
     const resp = await client.chatCompletion(req);
     console.log(`  Response: ${JSON.stringify(resp.choices[0].message.content)}`);
-    assert(resp.choices[0].message.content.length > 0);
-    assert.strictEqual(typeof resp.usage.total_tokens, 'number');
+    (0, assert_1.default)(resp.choices[0].message.content.length > 0);
+    assert_1.default.strictEqual(typeof resp.usage.total_tokens, 'number');
     console.log("  ✅ Chat completion passed");
-
     // Streaming
     console.log("\n🧪 TestChatCompletionStream (Real)");
     const streamReq = {
@@ -120,9 +112,8 @@ async function testIntegration(client: SglangClient) {
         temperature: 0.7,
         stream: true
     };
-    
     let fullContent = "";
-    const streamPromise = new Promise<void>((resolve, reject) => {
+    const streamPromise = new Promise((resolve, reject) => {
         client.chatCompletionStream(streamReq, (chunk) => {
             if (chunk === null) {
                 // End of stream
@@ -138,44 +129,39 @@ async function testIntegration(client: SglangClient) {
             reject(err);
         });
     });
-
     // Add a safety timeout
-    const timeoutPromise = new Promise<void>((_, reject) => {
+    const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Stream timed out after 10s")), 10000);
     });
-
     try {
         await Promise.race([streamPromise, timeoutPromise]);
         console.log(`\n  Full stream content: ${fullContent}`);
-        assert(fullContent.length > 0);
+        (0, assert_1.default)(fullContent.length > 0);
         console.log("  ✅ Chat stream passed");
-    } catch (e) {
-         console.error("\n  ❌ Chat stream failed:", e);
-         throw e;
+    }
+    catch (e) {
+        console.error("\n  ❌ Chat stream failed:", e);
+        throw e;
     }
 }
-
 async function main() {
     try {
         // Run Unit Tests
         testChatCompletionRequestValidation();
         testChatCompletionResponseTypes();
         testStreamingResponseTypes();
-        
         // Run Client Config Test (Connects)
         await testClientConfig();
-
         // Connect for Integration Tests
-        const client = await SglangClient.connect(CONFIG.endpoint, CONFIG.tokenizerPath);
+        const client = await client_1.SglangClient.connect(CONFIG.endpoint, CONFIG.tokenizerPath);
         await testIntegration(client);
-
         console.log("\n🎉 All tests passed!");
-    } catch (err) {
+    }
+    catch (err) {
         console.error("\n❌ Test failed:", err);
         process.exit(1);
     }
 }
-
 if (require.main === module) {
     main();
 }

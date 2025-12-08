@@ -99,6 +99,11 @@ export class SglangClient {
           if (err) {
               onError(err);
           } else {
+              // Check for null or special end-of-stream signal
+              if (chunkStr === "null" || chunkStr === null) {
+                  onChunk(null); // Signal end of stream
+                  return;
+              }
               try {
                   const chunk = JSON.parse(chunkStr);
                   onChunk(chunk);
